@@ -1,0 +1,6 @@
+(define x 5)
+(+ x 3)
+(define f (lambda (y) (+ y 1)))
+(f 5)
+(define (add a b) (+ a b))
+(add 3 4)

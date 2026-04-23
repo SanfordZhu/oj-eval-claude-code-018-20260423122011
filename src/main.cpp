@@ -10,6 +10,9 @@
 extern std::map<std::string, ExprType> primitives;
 extern std::map<std::string, ExprType> reserved_words;
 
+// Global environment for define
+Assoc global_env = empty();
+
 bool isExplicitVoidCall(Expr expr) {
     MakeVoid* make_void_expr = dynamic_cast<MakeVoid*>(expr.get());
     if (make_void_expr != nullptr) {
@@ -47,7 +50,6 @@ bool isExplicitVoidCall(Expr expr) {
 
 void REPL(){
     // read - evaluation - print loop
-    Assoc global_env = empty();
     while (1){
         #ifndef ONLINE_JUDGE
             std::cout << "scm> ";
@@ -59,7 +61,10 @@ void REPL(){
             Value val = expr -> eval(global_env);
             if (val -> v_type == V_TERMINATE)
                 break;
-            val -> show(std :: cout); // value print
+            // Don't print void values
+            if (val -> v_type != V_VOID) {
+                val -> show(std :: cout); // value print
+            }
         }
         catch (const RuntimeError &RE){
             // std :: cout << RE.message();
