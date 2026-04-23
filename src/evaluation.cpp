@@ -60,7 +60,11 @@ Value Binary::eval(Assoc &e) { // evaluation of two-operators primitive
 }
 
 Value Variadic::eval(Assoc &e) { // evaluation of multi-operator primitive
-    // TODO: TO COMPLETE THE VARIADIC CLASS
+    std::vector<Value> values;
+    for (const auto& rand : rands) {
+        values.push_back(rand->eval(e));
+    }
+    return evalRator(values);
 }
 
 Value Var::eval(Assoc &e) { // evaluation of variable
@@ -206,19 +210,193 @@ Value Modulo::evalRator(const Value &rand1, const Value &rand2) { // modulo
 }
 
 Value PlusVar::evalRator(const std::vector<Value> &args) { // + with multiple args
-    //TODO: To complete the addition logic
+    if (args.empty()) {
+        return IntegerV(0);  // (+) returns 0
+    }
+
+    Value result = args[0];
+    for (size_t i = 1; i < args.size(); i++) {
+        // Use binary Plus logic
+        if (result->v_type == V_INT && args[i]->v_type == V_INT) {
+            int n1 = dynamic_cast<Integer*>(result.get())->n;
+            int n2 = dynamic_cast<Integer*>(args[i].get())->n;
+            result = IntegerV(n1 + n2);
+        } else if (result->v_type == V_RATIONAL && args[i]->v_type == V_RATIONAL) {
+            Rational* r1 = dynamic_cast<Rational*>(result.get());
+            Rational* r2 = dynamic_cast<Rational*>(args[i].get());
+            int num = r1->numerator * r2->denominator + r2->numerator * r1->denominator;
+            int den = r1->denominator * r2->denominator;
+            result = RationalV(num, den);
+        } else if (result->v_type == V_INT && args[i]->v_type == V_RATIONAL) {
+            int n1 = dynamic_cast<Integer*>(result.get())->n;
+            Rational* r2 = dynamic_cast<Rational*>(args[i].get());
+            int num = n1 * r2->denominator + r2->numerator;
+            int den = r2->denominator;
+            result = RationalV(num, den);
+        } else if (result->v_type == V_RATIONAL && args[i]->v_type == V_INT) {
+            Rational* r1 = dynamic_cast<Rational*>(result.get());
+            int n2 = dynamic_cast<Integer*>(args[i].get())->n;
+            int num = r1->numerator + n2 * r1->denominator;
+            int den = r1->denominator;
+            result = RationalV(num, den);
+        } else {
+            throw RuntimeError("Wrong typename");
+        }
+    }
+    return result;
 }
 
 Value MinusVar::evalRator(const std::vector<Value> &args) { // - with multiple args
-    //TODO: To complete the substraction logic
+    if (args.empty()) {
+        throw RuntimeError("Wrong number of arguments for -");
+    }
+    if (args.size() == 1) {
+        // Unary minus
+        if (args[0]->v_type == V_INT) {
+            int n = dynamic_cast<Integer*>(args[0].get())->n;
+            return IntegerV(-n);
+        } else if (args[0]->v_type == V_RATIONAL) {
+            Rational* r = dynamic_cast<Rational*>(args[0].get());
+            return RationalV(-r->numerator, r->denominator);
+        }
+        throw RuntimeError("Wrong typename");
+    }
+
+    // Multiple arguments: left-associative subtraction
+    Value result = args[0];
+    for (size_t i = 1; i < args.size(); i++) {
+        // Use binary Minus logic
+        if (result->v_type == V_INT && args[i]->v_type == V_INT) {
+            int n1 = dynamic_cast<Integer*>(result.get())->n;
+            int n2 = dynamic_cast<Integer*>(args[i].get())->n;
+            result = IntegerV(n1 - n2);
+        } else if (result->v_type == V_RATIONAL && args[i]->v_type == V_RATIONAL) {
+            Rational* r1 = dynamic_cast<Rational*>(result.get());
+            Rational* r2 = dynamic_cast<Rational*>(args[i].get());
+            int num = r1->numerator * r2->denominator - r2->numerator * r1->denominator;
+            int den = r1->denominator * r2->denominator;
+            result = RationalV(num, den);
+        } else if (result->v_type == V_INT && args[i]->v_type == V_RATIONAL) {
+            int n1 = dynamic_cast<Integer*>(result.get())->n;
+            Rational* r2 = dynamic_cast<Rational*>(args[i].get());
+            int num = n1 * r2->denominator - r2->numerator;
+            int den = r2->denominator;
+            result = RationalV(num, den);
+        } else if (result->v_type == V_RATIONAL && args[i]->v_type == V_INT) {
+            Rational* r1 = dynamic_cast<Rational*>(result.get());
+            int n2 = dynamic_cast<Integer*>(args[i].get())->n;
+            int num = r1->numerator - n2 * r1->denominator;
+            int den = r1->denominator;
+            result = RationalV(num, den);
+        } else {
+            throw RuntimeError("Wrong typename");
+        }
+    }
+    return result;
 }
 
 Value MultVar::evalRator(const std::vector<Value> &args) { // * with multiple args
-    //TODO: To complete the multiplication logic
+    if (args.empty()) {
+        return IntegerV(1);  // (*) returns 1
+    }
+
+    Value result = args[0];
+    for (size_t i = 1; i < args.size(); i++) {
+        // Use binary Mult logic
+        if (result->v_type == V_INT && args[i]->v_type == V_INT) {
+            int n1 = dynamic_cast<Integer*>(result.get())->n;
+            int n2 = dynamic_cast<Integer*>(args[i].get())->n;
+            result = IntegerV(n1 * n2);
+        } else if (result->v_type == V_RATIONAL && args[i]->v_type == V_RATIONAL) {
+            Rational* r1 = dynamic_cast<Rational*>(result.get());
+            Rational* r2 = dynamic_cast<Rational*>(args[i].get());
+            int num = r1->numerator * r2->numerator;
+            int den = r1->denominator * r2->denominator;
+            result = RationalV(num, den);
+        } else if (result->v_type == V_INT && args[i]->v_type == V_RATIONAL) {
+            int n1 = dynamic_cast<Integer*>(result.get())->n;
+            Rational* r2 = dynamic_cast<Rational*>(args[i].get());
+            int num = n1 * r2->numerator;
+            int den = r2->denominator;
+            result = RationalV(num, den);
+        } else if (result->v_type == V_RATIONAL && args[i]->v_type == V_INT) {
+            Rational* r1 = dynamic_cast<Rational*>(result.get());
+            int n2 = dynamic_cast<Integer*>(args[i].get())->n;
+            int num = r1->numerator * n2;
+            int den = r1->denominator;
+            result = RationalV(num, den);
+        } else {
+            throw RuntimeError("Wrong typename");
+        }
+    }
+    return result;
 }
 
 Value DivVar::evalRator(const std::vector<Value> &args) { // / with multiple args
-    //TODO: To complete the divisor logic
+    if (args.empty()) {
+        throw RuntimeError("Wrong number of arguments for /");
+    }
+    if (args.size() == 1) {
+        // Unary division (reciprocal)
+        if (args[0]->v_type == V_INT) {
+            int n = dynamic_cast<Integer*>(args[0].get())->n;
+            if (n == 0) {
+                throw RuntimeError("Division by zero");
+            }
+            return RationalV(1, n);
+        } else if (args[0]->v_type == V_RATIONAL) {
+            Rational* r = dynamic_cast<Rational*>(args[0].get());
+            if (r->numerator == 0) {
+                throw RuntimeError("Division by zero");
+            }
+            return RationalV(r->denominator, r->numerator);
+        }
+        throw RuntimeError("Wrong typename");
+    }
+
+    // Multiple arguments: left-associative division
+    Value result = args[0];
+    for (size_t i = 1; i < args.size(); i++) {
+        // Use binary Div logic
+        if (result->v_type == V_INT && args[i]->v_type == V_INT) {
+            int n1 = dynamic_cast<Integer*>(result.get())->n;
+            int n2 = dynamic_cast<Integer*>(args[i].get())->n;
+            if (n2 == 0) {
+                throw RuntimeError("Division by zero");
+            }
+            result = RationalV(n1, n2);
+        } else if (result->v_type == V_RATIONAL && args[i]->v_type == V_RATIONAL) {
+            Rational* r1 = dynamic_cast<Rational*>(result.get());
+            Rational* r2 = dynamic_cast<Rational*>(args[i].get());
+            if (r2->numerator == 0) {
+                throw RuntimeError("Division by zero");
+            }
+            int num = r1->numerator * r2->denominator;
+            int den = r1->denominator * r2->numerator;
+            result = RationalV(num, den);
+        } else if (result->v_type == V_INT && args[i]->v_type == V_RATIONAL) {
+            int n1 = dynamic_cast<Integer*>(result.get())->n;
+            Rational* r2 = dynamic_cast<Rational*>(args[i].get());
+            if (r2->numerator == 0) {
+                throw RuntimeError("Division by zero");
+            }
+            int num = n1 * r2->denominator;
+            int den = r2->numerator;
+            result = RationalV(num, den);
+        } else if (result->v_type == V_RATIONAL && args[i]->v_type == V_INT) {
+            Rational* r1 = dynamic_cast<Rational*>(result.get());
+            int n2 = dynamic_cast<Integer*>(args[i].get())->n;
+            if (n2 == 0) {
+                throw RuntimeError("Division by zero");
+            }
+            int num = r1->numerator;
+            int den = r1->denominator * n2;
+            result = RationalV(num, den);
+        } else {
+            throw RuntimeError("Wrong typename");
+        }
+    }
+    return result;
 }
 
 Value Expt::evalRator(const Value &rand1, const Value &rand2) { // expt
@@ -315,23 +493,73 @@ Value Greater::evalRator(const Value &rand1, const Value &rand2) { // >
 }
 
 Value LessVar::evalRator(const std::vector<Value> &args) { // < with multiple args
-    //TODO: To complete the less logic
+    if (args.size() < 2) {
+        throw RuntimeError("Wrong number of arguments for <");
+    }
+
+    for (size_t i = 0; i < args.size() - 1; i++) {
+        int cmp = compareNumericValues(args[i], args[i+1]);
+        if (cmp >= 0) {
+            return BooleanV(false);
+        }
+    }
+    return BooleanV(true);
 }
 
 Value LessEqVar::evalRator(const std::vector<Value> &args) { // <= with multiple args
-    //TODO: To complete the lesseq logic
+    if (args.size() < 2) {
+        throw RuntimeError("Wrong number of arguments for <=");
+    }
+
+    for (size_t i = 0; i < args.size() - 1; i++) {
+        int cmp = compareNumericValues(args[i], args[i+1]);
+        if (cmp > 0) {
+            return BooleanV(false);
+        }
+    }
+    return BooleanV(true);
 }
 
 Value EqualVar::evalRator(const std::vector<Value> &args) { // = with multiple args
-    //TODO: To complete the equal logic
+    if (args.size() < 2) {
+        throw RuntimeError("Wrong number of arguments for =");
+    }
+
+    for (size_t i = 0; i < args.size() - 1; i++) {
+        int cmp = compareNumericValues(args[i], args[i+1]);
+        if (cmp != 0) {
+            return BooleanV(false);
+        }
+    }
+    return BooleanV(true);
 }
 
 Value GreaterEqVar::evalRator(const std::vector<Value> &args) { // >= with multiple args
-    //TODO: To complete the greatereq logic
+    if (args.size() < 2) {
+        throw RuntimeError("Wrong number of arguments for >=");
+    }
+
+    for (size_t i = 0; i < args.size() - 1; i++) {
+        int cmp = compareNumericValues(args[i], args[i+1]);
+        if (cmp < 0) {
+            return BooleanV(false);
+        }
+    }
+    return BooleanV(true);
 }
 
 Value GreaterVar::evalRator(const std::vector<Value> &args) { // > with multiple args
-    //TODO: To complete the greater logic
+    if (args.size() < 2) {
+        throw RuntimeError("Wrong number of arguments for >");
+    }
+
+    for (size_t i = 0; i < args.size() - 1; i++) {
+        int cmp = compareNumericValues(args[i], args[i+1]);
+        if (cmp <= 0) {
+            return BooleanV(false);
+        }
+    }
+    return BooleanV(true);
 }
 
 Value Cons::evalRator(const Value &rand1, const Value &rand2) { // cons

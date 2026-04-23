@@ -1,0 +1,3 @@
+(and #t #f)
+(or #t #f)
+(not #t)
