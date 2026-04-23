@@ -79,25 +79,29 @@ Value Var::eval(Assoc &e) { // evaluation of variable
 
 Value Plus::evalRator(const Value &rand1, const Value &rand2) { // +
     if (rand1->v_type == V_INT && rand2->v_type == V_INT) {
-        int n1 = dynamic_cast<Integer*>(rand1.get())->n;
-        int n2 = dynamic_cast<Integer*>(rand2.get())->n;
-        return IntegerV(n1 + n2);
+        Integer* i1 = dynamic_cast<Integer*>(rand1.get());
+        Integer* i2 = dynamic_cast<Integer*>(rand2.get());
+        if (!i1 || !i2) throw RuntimeError("Invalid integer value");
+        return IntegerV(i1->n + i2->n);
     } else if (rand1->v_type == V_RATIONAL && rand2->v_type == V_RATIONAL) {
         Rational* r1 = dynamic_cast<Rational*>(rand1.get());
         Rational* r2 = dynamic_cast<Rational*>(rand2.get());
+        if (!r1 || !r2) throw RuntimeError("Invalid rational value");
         int num = r1->numerator * r2->denominator + r2->numerator * r1->denominator;
         int den = r1->denominator * r2->denominator;
         return RationalV(num, den);
     } else if (rand1->v_type == V_INT && rand2->v_type == V_RATIONAL) {
-        int n1 = dynamic_cast<Integer*>(rand1.get())->n;
+        Integer* i1 = dynamic_cast<Integer*>(rand1.get());
         Rational* r2 = dynamic_cast<Rational*>(rand2.get());
-        int num = n1 * r2->denominator + r2->numerator;
+        if (!i1 || !r2) throw RuntimeError("Invalid numeric value");
+        int num = i1->n * r2->denominator + r2->numerator;
         int den = r2->denominator;
         return RationalV(num, den);
     } else if (rand1->v_type == V_RATIONAL && rand2->v_type == V_INT) {
         Rational* r1 = dynamic_cast<Rational*>(rand1.get());
-        int n2 = dynamic_cast<Integer*>(rand2.get())->n;
-        int num = r1->numerator + n2 * r1->denominator;
+        Integer* i2 = dynamic_cast<Integer*>(rand2.get());
+        if (!r1 || !i2) throw RuntimeError("Invalid numeric value");
+        int num = r1->numerator + i2->n * r1->denominator;
         int den = r1->denominator;
         return RationalV(num, den);
     }
